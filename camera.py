@@ -5,6 +5,7 @@ import datetime
 import time
 import threading
 import cv2
+import serial
 
 
 ap = argparse.ArgumentParser()

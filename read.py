@@ -2,6 +2,11 @@ import decode as decoder
 import detect as detector
 import cv2
 import numpy as np
+import serial
+
+# Configura la comunicación serial
+ser = serial.Serial(port='COM5', baudrate=115200, timeout=1)
+
 
 def decode_image(image):
     result_dict = {}
@@ -13,7 +18,7 @@ def decode_image(image):
         cropped = candidate["cropped"]
         rect = candidate["rect"]
         box = cv2.boxPoints(rect) 
-        box = np.int0(box)
+        box = np.intp(box)
         ean13, is_valid, thresh = decoder.decode(cropped)
         if is_valid:
             result = {}
@@ -33,7 +38,7 @@ def decode_image(image):
     return result_dict
 
 if __name__ == "__main__":
-    image = cv2.imread("multiple.jpg")
+    image = cv2.imread("fotos/1.jpg")
     result_dict = decode_image(image)
     results = result_dict["results"]
     text = "No barcode found"
@@ -43,10 +48,13 @@ if __name__ == "__main__":
                 text = "Code: "
             ean13 = result["barcodeText"]
             text = text + ean13 + " "
+            ser.write(ean13.encode())  # Envia el dato al ESP32-S3
+            print(f"EAN13 {ean13} enviado al ESP32-S3")  # Imprime un mensaje de confirmación
             cv2.line(image,(result["x1"],result["y1"]),(result["x2"],result["y2"]),(0,255,0),3)
             cv2.line(image,(result["x2"],result["y2"]),(result["x3"],result["y3"]),(0,255,0),3)
             cv2.line(image,(result["x3"],result["y3"]),(result["x4"],result["y4"]),(0,255,0),3)
             cv2.line(image,(result["x4"],result["y4"]),(result["x1"],result["y1"]),(0,255,0),3)
+        ser.close()  # Cierra el puerto serie
     scale_percent = 640/image.shape[1]       
     width = int(image.shape[1] * scale_percent)
     height = int(image.shape[0] * scale_percent)
